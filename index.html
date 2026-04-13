@@ -4,19 +4,18 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Wandr — AI Trip Planner</title>
+
+  <!-- Styles — must be in head -->
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 </head>
 <body style="position:relative">
 
-  <!-- =============================================
-       SECTION 1: HERO HEADER
-       The dark banner at the top of the page
-  ============================================== -->
+  <!-- HERO -->
   <header class="hero">
     <div class="hero-inner">
       <div class="logo">Wand<span>r</span></div>
       <p class="tagline">AI-powered trip planner — full itinerary, budget & map in seconds</p>
-
-      <!-- Small info pills below the tagline -->
       <div class="pills">
         <span class="pill">5 AI agents</span>
         <span class="pill">Budget-aware</span>
@@ -26,74 +25,38 @@
     </div>
   </header>
 
-
-  <!-- =============================================
-       SECTION 2: MAIN CONTENT AREA
-       Everything below the hero lives here
-  ============================================== -->
   <main class="main">
 
-
-    <!-- ==========================================
-         TAB BUTTONS
-         Two tabs: Plan a trip | Compare destinations
-    =========================================== -->
+    <!-- TABS -->
     <div class="tab-row">
-      <button class="tab-btn active" id="tab-plan-btn" onclick="switchTab('plan')">
-        ✈ Plan a trip
-      </button>
-      <button class="tab-btn" id="tab-cmp-btn" onclick="switchTab('compare')">
-        ⚖ Compare destinations
-      </button>
+      <button class="tab-btn active" id="tab-plan-btn" onclick="switchTab('plan')">✈ Plan a trip</button>
+      <button class="tab-btn" id="tab-cmp-btn" onclick="switchTab('compare')">⚖ Compare destinations</button>
     </div>
 
-
-    <!-- ==========================================
-         TAB 1: PLAN A TRIP
-    =========================================== -->
+    <!-- TAB 1: PLAN -->
     <div id="tab-plan">
 
-      <!-- The white card that wraps the form -->
       <div class="card">
         <h2 class="card-title">Trip details</h2>
-
-        <!-- The form grid — 2 columns on desktop -->
         <div class="form-grid">
 
-          <!-- Row 1: From + To -->
           <div class="form-group">
             <label for="from">Travelling from</label>
-            <input
-              type="text"
-              id="from"
-              placeholder="e.g. Mysore, New York, London"
-            />
+            <input type="text" id="from" placeholder="e.g. Mysore, New York, London"/>
           </div>
 
           <div class="form-group">
             <label for="to">Destination</label>
-            <input
-              type="text"
-              id="to"
-              placeholder="e.g. Manali, Paris, Bali"
-            />
+            <input type="text" id="to" placeholder="e.g. Manali, Paris, Bali"/>
           </div>
 
-          <!-- Row 2: Days + Budget -->
           <div class="form-group">
             <label for="days">Number of days</label>
-            <input
-              type="number"
-              id="days"
-              min="1"
-              max="60"
-              placeholder="e.g. 5"
-            />
+            <input type="number" id="days" min="1" max="60" placeholder="e.g. 5"/>
           </div>
 
           <div class="form-group">
             <label for="budget">Total budget</label>
-            <!-- Currency + amount side by side -->
             <div class="budget-row">
               <select id="currency">
                 <option value="INR">₹ INR</option>
@@ -101,15 +64,10 @@
                 <option value="EUR">€ EUR</option>
                 <option value="GBP">£ GBP</option>
               </select>
-              <input
-                type="number"
-                id="budget"
-                placeholder="e.g. 25000"
-              />
+              <input type="number" id="budget" placeholder="e.g. 25000"/>
             </div>
           </div>
 
-          <!-- Row 3: Style + Travellers -->
           <div class="form-group">
             <label for="style">Travel style</label>
             <select id="style">
@@ -121,106 +79,49 @@
 
           <div class="form-group">
             <label for="travellers">No. of travellers</label>
-            <input
-              type="number"
-              id="travellers"
-              min="1"
-              value="1"
-            />
+            <input type="number" id="travellers" min="1" value="1"/>
           </div>
 
-          <!-- Row 4: Preferences — full width -->
           <div class="form-group full-width">
             <label for="prefs">Special preferences / notes</label>
-            <textarea
-              id="prefs"
-              placeholder="e.g. vegetarian only, love trekking, travelling with toddler, need wheelchair access..."
-            ></textarea>
+            <textarea id="prefs" placeholder="e.g. vegetarian only, love trekking, travelling with toddler..."></textarea>
           </div>
 
         </div>
-        <!-- end .form-grid -->
 
-        <!-- The main action button -->
         <button class="go-btn" id="plan-btn" onclick="planTrip()">
           ✦ Plan my trip — free &amp; instant
         </button>
-
       </div>
-      <!-- end .card -->
 
-
-      <!-- ========================================
-           AGENT STATUS PANEL
-           Hidden until user clicks Plan my trip
-           Shows 5 agents running in real time
-      ========================================= -->
+      <!-- AGENTS -->
       <div class="agents-panel" id="agents-panel">
-
-        <div class="agent" id="agent-0">
-          <div class="agent-icon">✈</div>
-          <div class="agent-name">Travel</div>
-          <div class="agent-status" id="agent-0-status">Waiting</div>
-        </div>
-
-        <div class="agent" id="agent-1">
-          <div class="agent-icon">🏨</div>
-          <div class="agent-name">Stay</div>
-          <div class="agent-status" id="agent-1-status">Waiting</div>
-        </div>
-
-        <div class="agent" id="agent-2">
-          <div class="agent-icon">🍽</div>
-          <div class="agent-name">Food</div>
-          <div class="agent-status" id="agent-2-status">Waiting</div>
-        </div>
-
-        <div class="agent" id="agent-3">
-          <div class="agent-icon">🗺</div>
-          <div class="agent-name">Itinerary</div>
-          <div class="agent-status" id="agent-3-status">Waiting</div>
-        </div>
-
-        <div class="agent" id="agent-4">
-          <div class="agent-icon">🧠</div>
-          <div class="agent-name">Coordinator</div>
-          <div class="agent-status" id="agent-4-status">Waiting</div>
-        </div>
-
+        <div class="agent" id="agent-0"><div class="agent-icon">✈</div><div class="agent-name">Travel</div><div class="agent-status" id="agent-0-status">Waiting</div></div>
+        <div class="agent" id="agent-1"><div class="agent-icon">🏨</div><div class="agent-name">Stay</div><div class="agent-status" id="agent-1-status">Waiting</div></div>
+        <div class="agent" id="agent-2"><div class="agent-icon">🍽</div><div class="agent-name">Food</div><div class="agent-status" id="agent-2-status">Waiting</div></div>
+        <div class="agent" id="agent-3"><div class="agent-icon">🗺</div><div class="agent-name">Itinerary</div><div class="agent-status" id="agent-3-status">Waiting</div></div>
+        <div class="agent" id="agent-4"><div class="agent-icon">🧠</div><div class="agent-name">Coordinator</div><div class="agent-status" id="agent-4-status">Waiting</div></div>
       </div>
-      <!-- end .agents-panel -->
 
-
-      <!-- Thinking message — shown while AI is working -->
+      <!-- THINKING -->
       <div class="thinking" id="thinking">
-        <div class="thinking-dots">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
+        <div class="thinking-dots"><span></span><span></span><span></span></div>
         <span id="thinking-msg">Running agents...</span>
       </div>
 
-
-      <!-- Results appear here after planning -->
+      <!-- RESULTS -->
       <div id="plan-result"></div>
 
-      <!-- Saved trips panel — populated by JS on load -->
+      <!-- SAVED TRIPS -->
       <div id="saved-trips-panel"></div>
 
     </div>
-    <!-- end #tab-plan -->
 
-
-    <!-- ==========================================
-         TAB 2: COMPARE DESTINATIONS
-         Hidden by default, shown when tab clicked
-    =========================================== -->
+    <!-- TAB 2: COMPARE -->
     <div id="tab-compare" class="hidden">
 
       <div class="card">
         <h2 class="card-title">Compare up to 3 destinations</h2>
-
         <div class="form-grid">
 
           <div class="form-group">
@@ -275,76 +176,32 @@
         <button class="go-btn" id="cmp-btn" onclick="compareTrips()">
           ⚖ Compare destinations
         </button>
-
       </div>
 
-      <!-- Compare thinking + results -->
       <div class="thinking hidden" id="cmp-thinking">
-        <div class="thinking-dots">
-          <span></span><span></span><span></span>
-        </div>
+        <div class="thinking-dots"><span></span><span></span><span></span></div>
         <span id="cmp-thinking-msg">Analyzing destinations...</span>
       </div>
 
       <div id="compare-result"></div>
 
     </div>
-    <!-- end #tab-compare -->
-
 
   </main>
-  <!-- end .main -->
 
-
-  <!-- =============================================
-       FOOTER
-  ============================================== -->
   <footer class="footer">
-    Built with Claude AI &nbsp;·&nbsp; Wandr &copy; 2025 &nbsp;·&nbsp; Free to use
+    Built with AI &nbsp;·&nbsp; Wandr &copy; 2025 &nbsp;·&nbsp; Free to use
   </footer>
 
+  <!--
+    SCRIPTS — order is critical:
+    1. Leaflet  (map library)
+    2. config   (your API key — loaded first so app.js can read it)
+    3. app      (all logic — loaded last)
+  -->
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="config.js"></script>
-<script src="app.js"></script>
-
-
-  <!-- =============================================
-       JAVASCRIPT
-       Tab switching only for now.
-       API calls come in Phase 4.
-  ============================================== -->
-  <script>
-
-    // Switch between Plan and Compare tabs
-    function switchTab(tab) {
-      // Hide both tab panels
-      document.getElementById('tab-plan').classList.add('hidden');
-      document.getElementById('tab-compare').classList.add('hidden');
-
-      // Remove active from both buttons
-      document.getElementById('tab-plan-btn').classList.remove('active');
-      document.getElementById('tab-cmp-btn').classList.remove('active');
-
-      // Show the right panel and activate the right button
-      if (tab === 'plan') {
-        document.getElementById('tab-plan').classList.remove('hidden');
-        document.getElementById('tab-plan-btn').classList.add('active');
-      } else {
-        document.getElementById('tab-compare').classList.remove('hidden');
-        document.getElementById('tab-cmp-btn').classList.add('active');
-      }
-    }
-
-    // Placeholder functions — we'll fill these in Phase 4
-    function planTrip() {
-      alert('API connection coming in Phase 4!');
-    }
-
-    function compareTrips() {
-      alert('API connection coming in Phase 4!');
-    }
-
-  </script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
 
 </body>
 </html>
