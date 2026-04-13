@@ -1,0 +1,14 @@
+# WANDR — files that should never go to GitHub
+
+# API keys — never share this
+config.js
+
+# Windows junk files
+Thumbs.db
+desktop.ini
+
+# Mac junk files
+.DS_Store
+
+trip.html
+trip_deploy.html

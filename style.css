@@ -1,0 +1,1198 @@
+/* ================================================
+   WANDR — STYLESHEET
+   Phase 3: Complete visual design
+
+   TABLE OF CONTENTS:
+   1.  CSS Variables (design tokens)
+   2.  Reset & base
+   3.  Hero header
+   4.  Main layout
+   5.  Tab buttons
+   6.  Cards
+   7.  Form grid & inputs
+   8.  Go button
+   9.  Agent status panel
+   10. Thinking animation
+   11. Results — budget bar & metrics
+   12. Results — plan sections
+   13. Results — cost breakdown
+   14. Results — options (A/B)
+   15. Compare cards
+   16. Map
+   17. Follow-up buttons
+   18. Error box
+   19. Footer
+   20. Utility classes
+   21. Mobile responsive
+================================================ */
+
+
+/* ------------------------------------------------
+   1. CSS VARIABLES
+   Change these to retheme the whole app instantly
+------------------------------------------------ */
+:root {
+  /* Colours */
+  --bg:           #f7f6f1;   /* page background — warm off-white */
+  --surface:      #ffffff;   /* card background */
+  --border:       #dddbd0;   /* default border */
+  --border-light: #eceae3;   /* subtle dividers */
+
+  /* Text */
+  --text:         #18181a;   /* primary text — near black */
+  --muted:        #6b6a63;   /* secondary text */
+  --hint:         #9e9d96;   /* placeholder / hint text */
+
+  /* Brand blue — buttons, focus rings, links */
+  --blue:         #2563eb;
+  --blue-dark:    #1d4ed8;
+  --blue-bg:      #eff4ff;
+  --blue-light:   #dbeafe;
+
+  /* Green — success, within budget */
+  --green:        #16a34a;
+  --green-bg:     #f0fdf4;
+  --green-light:  #dcfce7;
+
+  /* Amber — over budget warning */
+  --amber:        #b45309;
+  --amber-bg:     #fffbeb;
+  --amber-light:  #fef3c7;
+
+  /* Red — errors */
+  --red:          #dc2626;
+  --red-bg:       #fef2f2;
+  --red-light:    #fee2e2;
+
+  /* Spacing & shape */
+  --radius:       10px;
+  --radius-lg:    14px;
+  --radius-xl:    20px;
+  --shadow:       0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+  --shadow-md:    0 4px 16px rgba(0,0,0,.10);
+}
+
+
+/* ------------------------------------------------
+   2. RESET & BASE
+   Remove browser default styles, set font
+------------------------------------------------ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+
+/* ------------------------------------------------
+   3. HERO HEADER
+   Dark banner at the top
+------------------------------------------------ */
+.hero {
+  background: var(--text);   /* near-black background */
+  color: #ffffff;
+  padding: 3rem 1.5rem 2.5rem;
+  text-align: center;
+}
+
+.hero-inner {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* The "Wandr" logo */
+.logo {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  margin-bottom: 0.5rem;
+}
+
+/* The blue "r" in Wandr */
+.logo span {
+  color: #60a5fa;
+}
+
+/* Tagline below the logo */
+.tagline {
+  font-size: 15px;
+  color: #94a3b8;
+  margin-bottom: 1.75rem;
+  line-height: 1.5;
+}
+
+/* Row of small info pills */
+.pills {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.pill {
+  font-size: 12px;
+  padding: 5px 13px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+
+/* ------------------------------------------------
+   4. MAIN LAYOUT
+   The white content area below the hero
+------------------------------------------------ */
+.main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.75rem 1.5rem;
+}
+
+
+/* ------------------------------------------------
+   5. TAB BUTTONS
+   "Plan a trip" | "Compare destinations"
+------------------------------------------------ */
+.tab-row {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  width: fit-content;
+  margin-bottom: 1.5rem;
+  background: var(--surface);
+}
+
+.tab-btn {
+  padding: 9px 22px;
+  font-size: 13px;
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border);
+  cursor: pointer;
+  color: var(--muted);
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tab-btn:last-child {
+  border-right: none;
+}
+
+/* Active tab — dark background */
+.tab-btn.active {
+  background: var(--text);
+  color: #ffffff;
+}
+
+.tab-btn:hover:not(.active) {
+  background: var(--bg);
+}
+
+
+/* ------------------------------------------------
+   6. CARDS
+   White boxes that wrap each section
+------------------------------------------------ */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow);
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+  color: var(--text);
+}
+
+
+/* ------------------------------------------------
+   7. FORM GRID & INPUTS
+------------------------------------------------ */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 1.25rem;
+}
+
+/* A single label + input pair */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Label text */
+.form-group label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* All text inputs, number inputs, selects, textareas */
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  font-size: 13px;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+/* Blue glow when focused */
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Textarea — resizable, taller */
+.form-group textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+/* Span full 2 columns */
+.full-width {
+  grid-column: 1 / -1;
+}
+
+/* Budget row — currency select + number input side by side */
+.budget-row {
+  display: flex;
+  gap: 6px;
+}
+
+.budget-row select {
+  width: 95px;
+  flex-shrink: 0;
+}
+
+.budget-row input {
+  flex: 1;
+}
+
+
+/* ------------------------------------------------
+   8. GO BUTTON
+   The main "Plan my trip" button
+------------------------------------------------ */
+.go-btn {
+  width: 100%;
+  padding: 13px;
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--blue);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.2px;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.go-btn:hover {
+  background: var(--blue-dark);
+}
+
+.go-btn:active {
+  transform: scale(0.99);
+}
+
+.go-btn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+  transform: none;
+}
+
+
+/* ------------------------------------------------
+   9. AGENT STATUS PANEL
+   5 cards showing each AI agent's status
+------------------------------------------------ */
+.agents-panel {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 0.75rem;
+
+  /* Hidden by default — shown when planning starts */
+  display: none;
+}
+
+/* Individual agent card */
+.agent {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 6px;
+  text-align: center;
+  transition: background 0.25s, border-color 0.25s;
+}
+
+.agent-icon {
+  font-size: 18px;
+  margin-bottom: 5px;
+}
+
+.agent-name {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.agent-status {
+  font-size: 10px;
+  color: var(--hint);
+  margin-top: 3px;
+}
+
+/* State: running */
+.agent.running {
+  border-color: var(--blue);
+  background: var(--blue-bg);
+}
+.agent.running .agent-name   { color: var(--blue); }
+.agent.running .agent-status { color: var(--blue); }
+
+/* State: done */
+.agent.done {
+  border-color: var(--green);
+  background: var(--green-bg);
+}
+.agent.done .agent-name   { color: var(--green); }
+.agent.done .agent-status { color: var(--green); }
+
+/* State: error */
+.agent.error {
+  border-color: var(--red);
+  background: var(--red-bg);
+}
+.agent.error .agent-name   { color: var(--red); }
+.agent.error .agent-status { color: var(--red); }
+
+
+/* ------------------------------------------------
+   10. THINKING ANIMATION
+   Three bouncing dots while AI is working
+------------------------------------------------ */
+.thinking {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--muted);
+  padding: 8px 0;
+
+  /* Hidden by default */
+  display: none;
+}
+
+.thinking-dots {
+  display: flex;
+  gap: 4px;
+}
+
+/* Each dot */
+.thinking-dots span {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+  animation: bounce 1.4s ease-in-out infinite;
+}
+
+/* Stagger each dot */
+.thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    opacity: 0.2;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+
+/* ------------------------------------------------
+   11. RESULTS — BUDGET BAR & METRICS
+   Shown after planning completes
+------------------------------------------------ */
+
+/* Top row of 3 summary numbers */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.metric {
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 12px 10px;
+  text-align: center;
+}
+
+.metric-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 5px;
+}
+
+.metric-value {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+/* Green when within budget */
+.metric-value.ok  { color: var(--green); }
+
+/* Red when over budget */
+.metric-value.over { color: var(--red); }
+
+/* The horizontal progress bar */
+.budget-bar-wrap {
+  height: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 10px 0 5px;
+}
+
+.budget-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--green);
+  transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.budget-bar-fill.over { background: var(--red); }
+
+.budget-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--hint);
+  margin-bottom: 4px;
+}
+
+/* Badges — green/amber/red pills */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.badge-ok    { background: var(--green-light); color: var(--green); }
+.badge-warn  { background: var(--amber-light); color: var(--amber); }
+.badge-info  { background: var(--blue-light);  color: var(--blue);  }
+.badge-red   { background: var(--red-light);   color: var(--red);   }
+
+
+/* ------------------------------------------------
+   12. RESULTS — PLAN SECTIONS
+   Travel, Stay, Food, Itinerary, Tips
+------------------------------------------------ */
+.section {
+  border-top: 1px solid var(--border-light);
+  padding-top: 14px;
+  margin-top: 14px;
+}
+
+.section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 10px;
+}
+
+.section-body {
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--text);
+  white-space: pre-wrap;   /* preserves line breaks from the AI */
+  word-break: break-word;
+}
+
+
+/* ------------------------------------------------
+   13. RESULTS — COST BREAKDOWN
+   5 small metric tiles in a row
+------------------------------------------------ */
+.costs-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+
+/* ------------------------------------------------
+   14. RESULTS — OPTIONS A/B
+   Two side-by-side option cards when over budget
+------------------------------------------------ */
+.options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.option-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+}
+
+.option-label {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.option-summary {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 8px;
+  line-height: 1.6;
+}
+
+.option-total {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.option-tradeoffs {
+  font-size: 11px;
+  color: var(--hint);
+  line-height: 1.6;
+}
+
+
+/* ------------------------------------------------
+   15. COMPARE CARDS
+   Side by side destination comparison
+------------------------------------------------ */
+.compare-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.compare-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  transition: box-shadow 0.2s;
+}
+
+.compare-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* Green border on the winner card */
+.compare-card.winner {
+  border: 2px solid var(--green);
+}
+
+.compare-dest {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+
+.compare-best-for {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+/* Big score number */
+.compare-score {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+
+.compare-score span {
+  font-size: 14px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* Each cost row in compare card */
+.compare-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.compare-row:last-of-type { border: none; }
+
+.compare-row-key   { color: var(--muted); }
+.compare-row-value { font-weight: 600; }
+
+.compare-highlights {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.compare-highlight {
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  gap: 7px;
+  align-items: flex-start;
+  line-height: 1.5;
+}
+
+.dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--hint);
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+
+.compare-verdict {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-light);
+}
+
+/* "Plan this trip" button inside compare card */
+.compare-plan-btn {
+  margin-top: 12px;
+  width: 100%;
+  padding: 9px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--blue-bg);
+  color: var(--blue);
+  border: 1px solid var(--blue-light);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.compare-plan-btn:hover {
+  background: var(--blue-light);
+}
+
+/* Winner reason banner above compare cards */
+.winner-banner {
+  padding: 12px 16px;
+  background: var(--green-bg);
+  border: 1px solid var(--green-light);
+  border-left: 4px solid var(--green);
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: #14532d;
+  margin-bottom: 14px;
+  line-height: 1.6;
+}
+
+
+/* ------------------------------------------------
+   16. MAP
+   Leaflet map container
+------------------------------------------------ */
+.map-wrap {
+  margin-top: 12px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.map-toolbar {
+  background: var(--surface);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.map-legend {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* The actual map canvas */
+#trip-map {
+  height: 360px;
+}
+
+
+/* ------------------------------------------------
+   17. FOLLOW-UP BUTTONS
+   Quick action pills below the results
+------------------------------------------------ */
+.followups {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.followup-btn {
+  font-size: 12px;
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.followup-btn:hover {
+  background: var(--bg);
+  color: var(--text);
+  border-color: var(--text);
+}
+
+
+/* ------------------------------------------------
+   18. ERROR BOX
+   Shown if the API fails or JSON can't be parsed
+------------------------------------------------ */
+.error-box {
+  background: var(--red-bg);
+  border: 1px solid var(--red-light);
+  border-radius: var(--radius);
+  padding: 14px;
+  font-size: 13px;
+  color: #7f1d1d;
+  line-height: 1.7;
+  margin-top: 8px;
+}
+
+/* Scrollable raw response for debugging */
+.error-raw {
+  background: #fff;
+  border: 1px solid var(--red-light);
+  border-radius: 6px;
+  padding: 10px;
+  margin-top: 10px;
+  font-size: 11px;
+  font-family: monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: #666;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+
+/* ------------------------------------------------
+   19. FOOTER
+------------------------------------------------ */
+.footer {
+  text-align: center;
+  padding: 2rem 1.5rem;
+  font-size: 12px;
+  color: var(--hint);
+  border-top: 1px solid var(--border-light);
+  margin-top: 2rem;
+}
+
+
+/* ------------------------------------------------
+   20. UTILITY CLASSES
+------------------------------------------------ */
+
+/* Hide any element */
+.hidden {
+  display: none !important;
+}
+
+/* Show the agents panel (flex grid) */
+.agents-panel.visible {
+  display: grid;
+}
+
+/* Show the thinking bar (flex) */
+.thinking.visible {
+  display: flex;
+}
+
+/* Result header row */
+.result-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.result-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.result-meta {
+  font-size: 12px;
+  color: var(--muted);
+  margin-left: auto;
+}
+
+
+/* ------------------------------------------------
+   21. MOBILE RESPONSIVE
+   Adjustments for screens under 600px wide
+------------------------------------------------ */
+@media (max-width: 600px) {
+
+  /* Hero */
+  .hero { padding: 2rem 1rem 1.5rem; }
+  .logo { font-size: 26px; }
+
+  /* Single column form on mobile */
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .full-width {
+    grid-column: 1;
+  }
+
+  /* Agents wrap into 3 columns */
+  .agents-panel {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* Metrics in 3 columns still work */
+  .metrics {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* Cost breakdown wraps to 3 */
+  .costs-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* Options stack vertically */
+  .options-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Compare cards stack vertically */
+  .compare-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Main padding tighter */
+  .main {
+    padding: 1.25rem 1rem;
+  }
+
+}
+
+
+/* ------------------------------------------------
+   PHASE 5 ADDITIONS
+   Save, Export, Share, Saved Trips panel
+------------------------------------------------ */
+
+/* Action bar that appears below results */
+.action-bar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 16px 0 8px;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.action-btn:hover {
+  background: var(--bg);
+  border-color: var(--text);
+}
+
+.action-btn.primary {
+  background: var(--blue);
+  color: #fff;
+  border-color: var(--blue);
+}
+
+.action-btn.primary:hover {
+  background: var(--blue-dark);
+}
+
+.action-btn.success {
+  background: var(--green-bg);
+  color: var(--green);
+  border-color: var(--green-light);
+}
+
+/* Saved trips panel */
+.saved-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow);
+}
+
+.saved-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.saved-panel-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.clear-btn {
+  font-size: 12px;
+  color: var(--red);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  transition: background 0.15s;
+}
+
+.clear-btn:hover {
+  background: var(--red-bg);
+}
+
+/* Individual saved trip row */
+.saved-trip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: var(--bg);
+}
+
+.saved-trip:hover {
+  border-color: var(--blue);
+  background: var(--blue-bg);
+}
+
+.saved-trip:last-child {
+  margin-bottom: 0;
+}
+
+.saved-trip-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.saved-trip-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.saved-trip-name {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.saved-trip-meta {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.saved-trip-cost {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--blue);
+  flex-shrink: 0;
+}
+
+.saved-trip-delete {
+  font-size: 16px;
+  color: var(--hint);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.saved-trip-delete:hover {
+  background: var(--red-bg);
+  color: var(--red);
+}
+
+.empty-saved {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.empty-saved-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+/* Share toast notification */
+.toast {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  background: var(--text);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 9999;
+}
+
+.toast.show {
+  opacity: 1;
+}
+
+/* Print styles — hides UI chrome when printing/saving PDF */
+@media print {
+  .hero, .tab-row, .card:first-of-type,
+  .agents-panel, .thinking, .action-bar,
+  .followups, .saved-panel, .footer,
+  .go-btn, .tab-btn, .followup-btn,
+  .compare-plan-btn { display: none !important; }
+
+  body { background: #fff; font-size: 12px; }
+  .main { padding: 0; max-width: 100%; }
+  .card { box-shadow: none; border: 1px solid #ddd; margin-bottom: 12px; }
+  .section-body { font-size: 12px; line-height: 1.6; }
+  #trip-map { height: 200px; }
+}
