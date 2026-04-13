@@ -652,17 +652,92 @@ function renderPlan(plan, from, to, days, travellers, currency) {
 
 // Helper: builds one option card (A or B)
 function buildOptionCard(opt, letter, badgeClass, currency) {
+  const isA = letter === 'A';
+  const borderColor = isA ? 'var(--green)' : 'var(--blue)';
+
   return (
-    '<div class="option-card">' +
+    '<div class="option-card" onclick="selectOption(\'' + letter + '\')" style="cursor:pointer;transition:all 0.2s;border:2px solid transparent" ' +
+      'onmouseover="this.style.borderColor=\'' + borderColor + '\';this.style.background=\'var(--bg)\'" ' +
+      'onmouseout="this.style.borderColor=\'transparent\';this.style.background=\'var(--bg)\'">' +
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">' +
         '<span class="badge ' + badgeClass + '">Option ' + letter + '</span>' +
         '<span class="option-label">' + escapeHTML(opt.label || '') + '</span>' +
+        '<span style="margin-left:auto;font-size:11px;color:var(--muted)">Click to select →</span>' +
       '</div>' +
       '<div class="option-summary">' + escapeHTML(opt.summary || '') + '</div>' +
       (opt.total ? '<div class="option-total">' + formatMoney(opt.total, currency) + '</div>' : '') +
       '<div class="option-tradeoffs">' + escapeHTML(opt.trade_offs || '') + '</div>' +
     '</div>'
   );
+}
+
+
+/* ------------------------------------------------
+   SELECT OPTION A or B
+   When user clicks an option card, rebuild the
+   entire results view using that option's data
+------------------------------------------------ */
+function selectOption(letter) {
+  const plan = window._lastPlan;
+  if (!plan) return;
+
+  const opt = letter === 'A' ? plan.option_a : plan.option_b;
+  if (!opt) return;
+
+  // Build a modified plan using the option's data
+  const selectedPlan = {
+    status:   'ok',
+    agents:   plan.agents,
+    budget:   plan.budget,
+    currency: plan.currency,
+    costs: {
+      total:           opt.total || 0,
+      travel:          opt.travel_cost  || Math.round((opt.total || 0) * 0.4),
+      stay:            opt.stay_cost    || Math.round((opt.total || 0) * 0.35),
+      food:            opt.food_cost    || Math.round((opt.total || 0) * 0.15),
+      activities:      opt.activity_cost|| Math.round((opt.total || 0) * 0.05),
+      local_transport: opt.transport_cost|| Math.round((opt.total || 0) * 0.05),
+    },
+    plan: {
+      travel:          opt.travel_detail    || opt.summary || '',
+      stay:            opt.stay_detail      || opt.summary || '',
+      food:            plan.plan ? plan.plan.food            : '',
+      itinerary:       plan.plan ? plan.plan.itinerary       : '',
+      local_transport: plan.plan ? plan.plan.local_transport : '',
+      tips:            plan.plan ? plan.plan.tips            : '',
+    },
+    recommendation: 'You selected ' + (letter === 'A' ? 'the budget' : 'the comfortable') +
+                    ' option. ' + (opt.trade_offs || ''),
+    map_markers:  plan.map_markers  || [],
+    option_a:     null,   // hide options after one is selected
+    option_b:     null,
+  };
+
+  // Highlight selected card visually before reload
+  const cards = document.querySelectorAll('.option-card');
+  cards.forEach(c => c.style.opacity = '0.4');
+  event.currentTarget.style.opacity = '1';
+  event.currentTarget.style.border  = '2px solid ' + (letter === 'A' ? 'var(--green)' : 'var(--blue)');
+
+  // Short delay so user sees the selection, then re-render
+  setTimeout(function() {
+    // Remove existing action bars
+    document.querySelectorAll('.action-bar').forEach(el => el.remove());
+
+    // Re-render with selected option
+    const from       = document.getElementById('from').value.trim();
+    const to         = document.getElementById('to').value.trim();
+    const days       = document.getElementById('days').value;
+    const travellers = document.getElementById('travellers').value || '1';
+
+    window._lastPlan = selectedPlan;
+    renderPlan(selectedPlan, from, to, days, travellers, plan.currency);
+
+    // Scroll to top of results smoothly
+    document.getElementById('plan-result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    showToast('Option ' + letter + ' selected!');
+  }, 300);
 }
 
 
@@ -1204,8 +1279,8 @@ const _originalRenderPlan = renderPlan;
 // Override renderPlan to add the action bar
 renderPlan = function(plan, from, to, days, travellers, currency) {
   // Remove any existing action bar first
-  const existing = document.querySelector('.action-bar');
-  if (existing) existing.remove();  // Call the original function first
+    document.querySelectorAll('.action-bar').forEach(el => el.remove());
+ // Call the original function first
   _originalRenderPlan(plan, from, to, days, travellers, currency);
 
   // Then inject the action bar below results
