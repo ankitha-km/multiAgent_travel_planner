@@ -672,6 +672,7 @@ function buildOptionCard(opt, letter, badgeClass, currency) {
 }
 
 
+
 /* ------------------------------------------------
    SELECT OPTION A or B
    When user clicks an option card, rebuild the
