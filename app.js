@@ -688,7 +688,8 @@ function renderMap(markers) {
                  .setView(latLngs[0], 12);
 
   // Add OpenStreetMap tiles (free, no API key needed)
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+, {
     attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
     maxZoom: 19
   }).addTo(mapInstance);
@@ -1202,7 +1203,9 @@ const _originalRenderPlan = renderPlan;
 
 // Override renderPlan to add the action bar
 renderPlan = function(plan, from, to, days, travellers, currency) {
-  // Call the original function first
+  // Remove any existing action bar first
+  const existing = document.querySelector('.action-bar');
+  if (existing) existing.remove();  // Call the original function first
   _originalRenderPlan(plan, from, to, days, travellers, currency);
 
   // Then inject the action bar below results
