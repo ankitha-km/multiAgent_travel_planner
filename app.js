@@ -1320,3 +1320,215 @@ document.addEventListener('DOMContentLoaded', function() {
   // Pre-fill form if opened from a shared link
   checkURLParams();
 });
+
+
+/* ================================================
+   PHASE 8 — LIVE WEATHER (Open-Meteo)
+   Free, no API key needed.
+   Fetches real forecast for the destination.
+================================================ */
+
+/* ------------------------------------------------
+   WEATHER CODE INTERPRETER
+   Open-Meteo returns a WMO weather code (number).
+   This maps those numbers to human descriptions
+   and an appropriate icon.
+------------------------------------------------ */
+function getWeatherInfo(code) {
+  if (code === 0)           return { label: 'Clear sky',         icon: '☀️' };
+  if (code <= 2)            return { label: 'Partly cloudy',     icon: '⛅' };
+  if (code === 3)           return { label: 'Overcast',          icon: '☁️' };
+  if (code <= 49)           return { label: 'Foggy',             icon: '🌫️' };
+  if (code <= 59)           return { label: 'Light drizzle',     icon: '🌦️' };
+  if (code <= 69)           return { label: 'Rainy',             icon: '🌧️' };
+  if (code <= 79)           return { label: 'Snowy',             icon: '❄️' };
+  if (code <= 84)           return { label: 'Rain showers',      icon: '🌦️' };
+  if (code <= 94)           return { label: 'Snow showers',      icon: '🌨️' };
+  return                           { label: 'Thunderstorm',      icon: '⛈️' };
+}
+
+/* ------------------------------------------------
+   PACKING SUGGESTION
+   Based on temperature and conditions,
+   suggest what to pack. Practical and specific.
+------------------------------------------------ */
+function getPackingSuggestion(maxTemp, minTemp, rain, hasSnow) {
+  const tips = [];
+
+  if (maxTemp >= 35)  tips.push('Light cotton clothes — it\'s very hot');
+  else if (maxTemp >= 28) tips.push('Light breathable clothing');
+  else if (maxTemp >= 20) tips.push('Light layers — warm in day, cool at night');
+  else if (maxTemp >= 10) tips.push('Warm jacket and layers needed');
+  else                tips.push('Heavy winter clothing essential');
+
+  if (hasSnow)        tips.push('Waterproof boots and snow gear');
+  if (rain > 5)       tips.push('Carry a raincoat or umbrella');
+  if (minTemp < 5)    tips.push('Pack thermal innerwear');
+  if (maxTemp > 30)   tips.push('Sunscreen SPF 50+ and sunglasses');
+
+  return tips;
+}
+
+/* ------------------------------------------------
+   FETCH WEATHER FROM OPEN-METEO
+   Takes lat/lng, returns structured forecast data.
+   All free, no key, no rate limit for normal use.
+------------------------------------------------ */
+async function fetchWeather(lat, lng, days) {
+  // Cap at 7 — Open-Meteo free tier limit
+  const forecastDays = Math.min(days || 5, 7);
+
+  const url = 'https://api.open-meteo.com/v1/forecast' +
+    '?latitude='  + lat +
+    '&longitude=' + lng +
+    '&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode,windspeed_10m_max' +
+    '&timezone=auto' +
+    '&forecast_days=' + forecastDays;
+
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('Weather fetch failed: ' + response.status);
+
+  const data = await response.json();
+  return data.daily;
+}
+
+/* ------------------------------------------------
+   BUILD WEATHER CARD HTML
+   Takes the Open-Meteo daily data and builds
+   a full weather card with day-by-day forecast.
+------------------------------------------------ */
+function buildWeatherCard(daily, destination, tripDays) {
+  const dates    = daily.time                  || [];
+  const maxTemps = daily.temperature_2m_max    || [];
+  const minTemps = daily.temperature_2m_min    || [];
+  const rains    = daily.precipitation_sum     || [];
+  const codes    = daily.weathercode           || [];
+  const winds    = daily.windspeed_10m_max     || [];
+
+  // Overall trip stats
+  const avgMax   = Math.round(maxTemps.reduce((a,b) => a+b, 0) / maxTemps.length);
+  const avgMin   = Math.round(minTemps.reduce((a,b) => a+b, 0) / minTemps.length);
+  const totalRain = rains.reduce((a,b) => a+b, 0).toFixed(1);
+  const hasSnow  = codes.some(c => c >= 70 && c <= 79);
+  const packing  = getPackingSuggestion(avgMax, avgMin, totalRain, hasSnow);
+
+  // Day name formatter
+  function dayName(dateStr, i) {
+    if (i === 0) return 'Today';
+    if (i === 1) return 'Tomorrow';
+    return new Date(dateStr).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+  }
+
+  // Build each day column
+  const dayCols = dates.map((date, i) => {
+    const info  = getWeatherInfo(codes[i]);
+    const max   = Math.round(maxTemps[i]);
+    const min   = Math.round(minTemps[i]);
+    const rain  = rains[i] ? rains[i].toFixed(1) : '0';
+    const wind  = Math.round(winds[i]);
+    const isDay = i < tripDays;   // highlight days within the trip
+
+    return (
+      '<div class="weather-day' + (isDay ? ' weather-day-active' : '') + '">' +
+        '<div class="weather-day-name">' + dayName(date, i) + '</div>' +
+        '<div class="weather-day-icon">' + info.icon + '</div>' +
+        '<div class="weather-day-label">' + info.label + '</div>' +
+        '<div class="weather-day-temps">' +
+          '<span class="weather-max">' + max + '°</span>' +
+          '<span class="weather-min">' + min + '°</span>' +
+        '</div>' +
+        '<div class="weather-day-rain">' +
+          (rain > 0 ? '🌧 ' + rain + 'mm' : '—') +
+        '</div>' +
+      '</div>'
+    );
+  }).join('');
+
+  // Packing tips list
+  const packingHTML = packing.map(tip =>
+    '<div class="weather-pack-item">' +
+      '<span class="weather-pack-dot"></span>' + tip +
+    '</div>'
+  ).join('');
+
+  // Summary line
+  const summaryInfo = getWeatherInfo(codes[0] || 0);
+
+  return (
+    '<div class="weather-card">' +
+
+      // Header
+      '<div class="weather-header">' +
+        '<div class="weather-header-left">' +
+          '<div class="weather-title">🌤 Live weather — ' + escapeHTML(destination) + '</div>' +
+          '<div class="weather-summary">' +
+            summaryInfo.icon + ' ' + summaryInfo.label + ' · ' +
+            avgMax + '°C high · ' + avgMin + '°C low · ' +
+            totalRain + 'mm rain expected' +
+          '</div>' +
+        '</div>' +
+        '<div class="weather-badge">Live forecast</div>' +
+      '</div>' +
+
+      // Day columns
+      '<div class="weather-days">' + dayCols + '</div>' +
+
+      // Packing tips
+      '<div class="weather-packing">' +
+        '<div class="weather-packing-title">🎒 What to pack based on this forecast</div>' +
+        packingHTML +
+      '</div>' +
+
+      '<div class="weather-credit">Data from Open-Meteo.com · Updated hourly · Free & open source</div>' +
+
+    '</div>'
+  );
+}
+
+/* ------------------------------------------------
+   INJECT WEATHER INTO THE RESULTS PAGE
+   Called after renderPlan — finds the itinerary
+   section and inserts weather card before it.
+------------------------------------------------ */
+async function injectWeather(lat, lng, destination, tripDays) {
+  // Find the itinerary section heading to insert before it
+  const sections = document.querySelectorAll('.section');
+  let itinerarySection = null;
+
+  sections.forEach(sec => {
+    const title = sec.querySelector('.section-title');
+    if (title && title.textContent.includes('itinerary')) {
+      itinerarySection = sec;
+    }
+  });
+
+  if (!itinerarySection) return;
+
+  // Show a loading placeholder first
+  const placeholder = document.createElement('div');
+  placeholder.className = 'weather-loading';
+  placeholder.innerHTML =
+    '<div class="weather-loading-inner">' +
+      '<div class="thinking-dots"><span></span><span></span><span></span></div>' +
+      '<span>Fetching live weather for ' + escapeHTML(destination) + '...</span>' +
+    '</div>';
+
+  itinerarySection.parentNode.insertBefore(placeholder, itinerarySection);
+
+  try {
+    const daily      = await fetchWeather(lat, lng, tripDays);
+    const weatherHTML = buildWeatherCard(daily, destination, tripDays);
+
+    // Replace placeholder with real weather card
+    const weatherEl  = document.createElement('div');
+    weatherEl.className = 'section';
+    weatherEl.innerHTML = weatherHTML;
+    placeholder.replaceWith(weatherEl);
+
+  } catch (err) {
+    // Silently remove placeholder if weather fails
+    // Don't break the whole app for a weather error
+    placeholder.remove();
+    console.warn('Weather fetch failed:', err.message);
+  }
+}
