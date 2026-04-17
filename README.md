@@ -29,6 +29,15 @@ LLM + agent + tools + coordinator + memory
   LangChain/CrewAI
   Hugging Face
   APIs(google maps , etc..)
+  live weather with open-meteo(  ai return map_markers with lat/lng
+                                                  ↓
+                                  we take the first marker.s coordinates
+                                                  ↓
+                                  fetch open-metoo api with those coords
+                                                  ↓
+                                  get days forecast - temp, rain , wind, conditions
+                                                  ↓
+                                  show weather card above the itinerary                             )
 
 example 
     
