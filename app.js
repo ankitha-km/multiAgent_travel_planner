@@ -647,6 +647,17 @@ function renderPlan(plan, from, to, days, travellers, currency) {
   if (validMarkers.length) {
     setTimeout(() => renderMap(validMarkers), 250);
   }
+
+  // Fetch live weather using first marker's coordinates
+  if (validMarkers.length) {
+    const firstMarker = validMarkers[0];
+    injectWeather(
+      firstMarker.lat,
+      firstMarker.lng,
+      to,
+      parseInt(days)
+    );
+  }
 }
 
 
