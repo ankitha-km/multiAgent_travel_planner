@@ -1543,3 +1543,342 @@ async function injectWeather(lat, lng, destination, tripDays) {
     console.warn('Weather fetch failed:', err.message);
   }
 }
+
+
+/* ================================================
+   PHASE 9 — SUPABASE AUTH + CLOUD SAVE
+================================================ */
+
+// Init Supabase client using config values
+const supabase = window.supabase.createClient(
+  CONFIG.SUPABASE_URL,
+  CONFIG.SUPABASE_KEY
+);
+
+// Current logged-in user (null if guest)
+let currentUser = null;
+
+/* ------------------------------------------------
+   AUTH: GOOGLE SIGN IN
+------------------------------------------------ */
+async function signInGoogle() {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.href
+    }
+  });
+  if (error) showToast('Login failed: ' + error.message);
+}
+
+/* ------------------------------------------------
+   AUTH: SIGN OUT
+------------------------------------------------ */
+async function signOut() {
+  await supabase.auth.signOut();
+  currentUser = null;
+  updateAuthUI(null);
+  showToast('Signed out');
+}
+
+/* ------------------------------------------------
+   AUTH: UPDATE UI BASED ON LOGIN STATE
+------------------------------------------------ */
+function updateAuthUI(user) {
+  const guestEl = document.getElementById('auth-guest');
+  const userEl  = document.getElementById('auth-user');
+  const emailEl = document.getElementById('auth-email');
+
+  if (user) {
+    // Logged in — show email and sign out button
+    guestEl.classList.add('hidden');
+    userEl.classList.remove('hidden');
+    if (emailEl) emailEl.textContent = user.email || 'Signed in';
+  } else {
+    // Guest — show Google login button
+    userEl.classList.add('hidden');
+    guestEl.classList.remove('hidden');
+  }
+}
+
+/* ------------------------------------------------
+   AUTH: LISTEN FOR LOGIN/LOGOUT EVENTS
+   Supabase fires this whenever auth state changes
+   including when user returns from Google redirect
+------------------------------------------------ */
+supabase.auth.onAuthStateChange(async (event, session) => {
+  currentUser = session ? session.user : null;
+  updateAuthUI(currentUser);
+
+  if (currentUser) {
+    showToast('Welcome! Syncing your trips...');
+
+    // Migrate any local trips to cloud
+    await migrateLocalTripsToCloud();
+
+    // Reload saved trips panel from cloud
+    await renderSavedTrips();
+  } else {
+    // Logged out — show local trips
+    await renderSavedTrips();
+  }
+});
+
+/* ------------------------------------------------
+   CLOUD SAVE: SAVE TRIP TO SUPABASE
+------------------------------------------------ */
+async function saveTripToCloud(plan, from, to, days, currency) {
+  if (!currentUser) return false;
+
+  const { error } = await supabase.from('trips').insert({
+    user_id:   currentUser.id,
+    from_city: from,
+    to_city:   to,
+    days:      parseInt(days),
+    currency:  currency,
+    total_cost: plan.costs ? plan.costs.total : 0,
+    plan_data:  plan
+  });
+
+  if (error) {
+    console.error('Cloud save failed:', error.message);
+    return false;
+  }
+  return true;
+}
+
+/* ------------------------------------------------
+   CLOUD LOAD: GET TRIPS FROM SUPABASE
+------------------------------------------------ */
+async function loadCloudTrips() {
+  if (!currentUser) return [];
+
+  const { data, error } = await supabase
+    .from('trips')
+    .select('*')
+    .order('saved_at', { ascending: false })
+    .limit(20);
+
+  if (error) {
+    console.error('Cloud load failed:', error.message);
+    return [];
+  }
+  return data || [];
+}
+
+/* ------------------------------------------------
+   CLOUD DELETE: REMOVE ONE TRIP FROM SUPABASE
+------------------------------------------------ */
+async function deleteCloudTrip(id, event) {
+  event.stopPropagation();
+
+  if (currentUser) {
+    await supabase.from('trips').delete().eq('id', id);
+  } else {
+    // Local delete
+    let trips = loadSavedTrips();
+    trips = trips.filter(t => t.id !== id);
+    writeSavedTrips(trips);
+  }
+  await renderSavedTrips();
+}
+
+/* ------------------------------------------------
+   MIGRATE: MOVE LOCAL TRIPS TO CLOUD ON LOGIN
+   When user signs in for the first time,
+   push their localStorage trips to Supabase
+   then clear localStorage.
+------------------------------------------------ */
+async function migrateLocalTripsToCloud() {
+  const local = loadSavedTrips();
+  if (!local.length) return;
+
+  for (const trip of local) {
+    await supabase.from('trips').insert({
+      user_id:    currentUser.id,
+      from_city:  trip.from,
+      to_city:    trip.to,
+      days:       parseInt(trip.days),
+      currency:   trip.currency,
+      total_cost: trip.total || 0,
+      plan_data:  trip.plan
+    });
+  }
+
+  // Clear local storage after migration
+  localStorage.removeItem(STORAGE_KEY);
+  showToast(local.length + ' local trip' + (local.length > 1 ? 's' : '') + ' synced to your account!');
+}
+
+/* ------------------------------------------------
+   OVERRIDE: saveCurrentTrip
+   Now saves to cloud if logged in, local if not
+------------------------------------------------ */
+const _originalSave = saveCurrentTrip;
+saveCurrentTrip = async function(plan, from, to, days, currency) {
+  if (currentUser) {
+    const ok = await saveTripToCloud(plan, from, to, days, currency);
+    if (ok) {
+      await renderSavedTrips();
+      showToast('Trip saved to your account!');
+    } else {
+      showToast('Cloud save failed — saved locally instead');
+      _originalSave(plan, from, to, days, currency);
+    }
+  } else {
+    // Not logged in — save locally as before
+    _originalSave(plan, from, to, days, currency);
+    showToast('Trip saved locally. Sign in to sync across devices.');
+  }
+};
+
+/* ------------------------------------------------
+   OVERRIDE: renderSavedTrips
+   Now shows cloud trips if logged in, local if not
+------------------------------------------------ */
+const _originalRenderSaved = renderSavedTrips;
+renderSavedTrips = async function() {
+  const panel = document.getElementById('saved-trips-panel');
+  if (!panel) return;
+
+  let trips = [];
+  let isCloud = false;
+
+  if (currentUser) {
+    // Show loading state
+    panel.innerHTML =
+      '<div class="saved-panel">' +
+        '<div class="saved-panel-header">' +
+          '<span class="saved-panel-title">🗂 Your trips</span>' +
+        '</div>' +
+        '<div class="thinking" style="display:flex;padding:1rem">' +
+          '<div class="thinking-dots"><span></span><span></span><span></span></div>' +
+          '<span>Loading from cloud...</span>' +
+        '</div>' +
+      '</div>';
+
+    trips   = await loadCloudTrips();
+    isCloud = true;
+  } else {
+    trips = loadSavedTrips();
+  }
+
+  if (!trips.length) {
+    panel.innerHTML =
+      '<div class="saved-panel">' +
+        '<div class="saved-panel-header">' +
+          '<span class="saved-panel-title">🗂 ' + (isCloud ? 'Your trips' : 'Saved trips') + '</span>' +
+        '</div>' +
+        '<div class="empty-saved">' +
+          '<div class="empty-saved-icon">✈</div>' +
+          '<div>No saved trips yet.<br>Plan a trip and click Save.</div>' +
+        '</div>' +
+      '</div>';
+    return;
+  }
+
+  // Build trip rows — handle both cloud and local formats
+  const tripRows = trips.map(t => {
+    const from     = isCloud ? t.from_city  : t.from;
+    const to       = isCloud ? t.to_city    : t.to;
+    const days     = isCloud ? t.days       : t.days;
+    const currency = isCloud ? t.currency   : t.currency;
+    const total    = isCloud ? t.total_cost : t.total;
+    const date     = isCloud
+      ? new Date(t.saved_at).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })
+      : t.savedAt;
+
+    const sym   = { INR:'₹', USD:'$', EUR:'€', GBP:'£' }[currency] || '';
+    const cost  = sym + Math.round(Number(total || 0)).toLocaleString();
+
+    return (
+      '<div class="saved-trip" onclick="loadTripById(\'' + t.id + '\', ' + isCloud + ')">' +
+        '<div class="saved-trip-icon">🗺</div>' +
+        '<div class="saved-trip-info">' +
+          '<div class="saved-trip-name">' + escapeHTML(from) + ' → ' + escapeHTML(to) + '</div>' +
+          '<div class="saved-trip-meta">' + days + ' days · ' + date +
+            (isCloud ? ' · ☁ Cloud' : ' · 💾 Local') +
+          '</div>' +
+        '</div>' +
+        '<div class="saved-trip-cost">' + cost + '</div>' +
+        '<button class="saved-trip-delete" ' +
+          'onclick="deleteCloudTrip(\'' + t.id + '\', event)" title="Delete">✕</button>' +
+      '</div>'
+    );
+  }).join('');
+
+  panel.innerHTML =
+    '<div class="saved-panel">' +
+      '<div class="saved-panel-header">' +
+        '<span class="saved-panel-title">🗂 ' +
+          (isCloud ? 'Your trips' : 'Saved trips') +
+          ' (' + trips.length + ')' +
+        '</span>' +
+        '<button class="clear-btn" onclick="clearAllTrips()">Clear all</button>' +
+      '</div>' +
+      tripRows +
+    '</div>';
+};
+
+/* ------------------------------------------------
+   LOAD TRIP BY ID
+   Works for both cloud and local trips
+------------------------------------------------ */
+async function loadTripById(id, isCloud) {
+  let plan, from, to, days, currency;
+
+  if (isCloud) {
+    const { data } = await supabase
+      .from('trips')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (!data) return;
+    plan     = data.plan_data;
+    from     = data.from_city;
+    to       = data.to_city;
+    days     = data.days;
+    currency = data.currency;
+  } else {
+    const trips = loadSavedTrips();
+    const trip  = trips.find(t => t.id === id);
+    if (!trip) return;
+    plan     = trip.plan;
+    from     = trip.from;
+    to       = trip.to;
+    days     = trip.days;
+    currency = trip.currency;
+  }
+
+  plan.budget   = plan.budget   || 0;
+  plan.currency = plan.currency || currency;
+
+  document.getElementById('from').value     = from;
+  document.getElementById('to').value       = to;
+  document.getElementById('days').value     = days;
+  document.getElementById('currency').value = currency;
+
+  renderPlan(plan, from, to, days, 1, currency);
+  document.getElementById('plan-result')
+    .scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ------------------------------------------------
+   OVERRIDE clearAllTrips to handle cloud too
+------------------------------------------------ */
+const _originalClear = clearAllTrips;
+clearAllTrips = async function() {
+  if (!confirm('Delete all saved trips?')) return;
+
+  if (currentUser) {
+    await supabase
+      .from('trips')
+      .delete()
+      .eq('user_id', currentUser.id);
+  } else {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+
+  await renderSavedTrips();
+};
