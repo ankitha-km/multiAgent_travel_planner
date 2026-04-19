@@ -1288,12 +1288,17 @@ const _originalRenderPlan = renderPlan;
 
 // Override renderPlan to add the action bar
 renderPlan = function(plan, from, to, days, travellers, currency) {
-  // Remove any existing action bar first
-    document.querySelectorAll('.action-bar').forEach(el => el.remove());
- // Call the original function first
+  // Remove any existing action bars
+  document.querySelectorAll('.action-bar').forEach(el => el.remove());
+
+  // Store plan globally BEFORE calling original
+  window._lastPlan = plan;
+
   _originalRenderPlan(plan, from, to, days, travellers, currency);
 
-  // Then inject the action bar below results
+  // Only add action bar once — check it doesn't already exist
+  if (document.querySelector('.action-bar')) return;
+
   const actionBar = document.createElement('div');
   actionBar.className = 'action-bar';
   actionBar.innerHTML =
@@ -1310,12 +1315,8 @@ renderPlan = function(plan, from, to, days, travellers, currency) {
       '🔗 Share link' +
     '</button>';
 
-  // Store plan globally so save can access it
-  window._lastPlan = plan;
-
-  // Insert after the results div
   const results = document.getElementById('plan-result');
-  results.parentNode.insertBefore(actionBar, results.nextSibling);
+  if (results) results.parentNode.insertBefore(actionBar, results.nextSibling);
 };
 
 
