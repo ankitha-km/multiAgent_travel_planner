@@ -224,6 +224,20 @@
   -->
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // On Netlify, keys come from environment variables injected at build time
+  // Locally, config.js provides them
+  if (typeof CONFIG === 'undefined') {
+    window.CONFIG = {
+      API_KEY:      '',
+      API_URL:      'https://api.groq.com/openai/v1/chat/completions',
+      MODEL:        'llama-3.3-70b-versatile',
+      PROVIDER:     'groq',
+      SUPABASE_URL: '',
+      SUPABASE_KEY: '',
+    };
+  }
+</script>
 <script src="config.js"></script>
 <script src="app.js"></script>
 

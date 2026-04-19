@@ -134,35 +134,40 @@ function hideThinking(elementId) {
    - Returns Claude's text response
 ------------------------------------------------ */
 async function callClaude(systemPrompt, userMessage, maxTokens) {
+  const isLocal = window.location.hostname === 'localhost' ||
+                  window.location.hostname === '127.0.0.1';
 
-  // Build headers based on which provider you're using
   const headers = { 'Content-Type': 'application/json' };
+  let url, bodyObj;
 
-  if (CONFIG.PROVIDER === 'groq') {
-    headers['Authorization'] = 'Bearer ' + CONFIG.API_KEY;
+  if (isLocal) {
+    // Local — use config.js keys directly
+    if (CONFIG.PROVIDER === 'groq') {
+      headers['Authorization'] = 'Bearer ' + CONFIG.API_KEY;
+    } else {
+      headers['x-api-key'] = CONFIG.API_KEY;
+      headers['anthropic-version'] = '2023-06-01';
+    }
+    url = CONFIG.API_URL;
+    bodyObj = {
+      model: CONFIG.MODEL,
+      max_tokens: maxTokens || 2500,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user',   content: userMessage  }
+      ]
+    };
   } else {
-    headers['x-api-key']         = CONFIG.API_KEY;
-    headers['anthropic-version'] = '2023-06-01';
+    // Live on Netlify — use the secure proxy function
+    url = '/.netlify/functions/claude';
+    bodyObj = {
+      systemPrompt: systemPrompt,
+      userMessage:  userMessage,
+      maxTokens:    maxTokens || 2500
+    };
   }
 
-  // Build body based on provider format
-  const bodyObj = CONFIG.PROVIDER === 'groq'
-    ? {
-        model:      CONFIG.MODEL,
-        max_tokens: maxTokens || 2500,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user',   content: userMessage  }
-        ]
-      }
-    : {
-        model:      CONFIG.MODEL,
-        max_tokens: maxTokens || 2500,
-        system:     systemPrompt,
-        messages: [{ role: 'user', content: userMessage }]
-      };
-
-  const response = await fetch(CONFIG.API_URL, {
+  const response = await fetch(url, {
     method:  'POST',
     headers: headers,
     body:    JSON.stringify(bodyObj)
@@ -176,19 +181,12 @@ async function callClaude(systemPrompt, userMessage, maxTokens) {
   const data = await response.json();
   if (data.error) throw new Error(data.error.message || 'API error');
 
-  // Parse response — format differs by provider
-  if (CONFIG.PROVIDER === 'groq') {
-    return data.choices && data.choices[0]
-      ? data.choices[0].message.content
-      : '';
-  } else {
-    const block = data.content && data.content.find(b => b.type === 'text');
-    return block ? block.text : '';
-  }
+  return data.choices && data.choices[0]
+    ? data.choices[0].message.content
+    : '';
 }
 
   
-
 
 /* ------------------------------------------------
    7. JSON EXTRACTOR
@@ -1550,10 +1548,15 @@ async function injectWeather(lat, lng, destination, tripDays) {
 ================================================ */
 
 // Init sbClient client using config values
-const sbClient = window.supabase.createClient(
-  CONFIG.SUPABASE_URL,
-  CONFIG.SUPABASE_KEY
-);
+const SUPA_URL = (typeof CONFIG !== 'undefined' && CONFIG.SUPABASE_URL)
+  ? CONFIG.SUPABASE_URL
+  : 'https://roxpyzsmoirjlzjylupo.supabase.co';
+
+const SUPA_KEY = (typeof CONFIG !== 'undefined' && CONFIG.SUPABASE_KEY)
+  ? CONFIG.SUPABASE_KEY
+  : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJveHB5enNtb2lyamx6anlsdXBvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1MTk3NjAsImV4cCI6MjA5MjA5NTc2MH0.JERe-lxOIerYUl4oLSu0qFHZWxNMg-XnXoBoSO5D-4A';   // paste your actual anon key here — it's public-safe
+
+const sbClient = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 
 // Current logged-in user (null if guest)
 let currentUser = null;
