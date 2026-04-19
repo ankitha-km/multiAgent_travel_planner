@@ -1074,12 +1074,32 @@ function writeSavedTrips(trips) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(trips));
 }
 
-// Save the current plan with a generated ID
 function saveCurrentTrip(plan, from, to, days, currency) {
+  // Find the save button and disable it immediately to prevent duplicates
+  const saveBtns = document.querySelectorAll('.action-btn.primary');
+  saveBtns.forEach(btn => {
+    btn.disabled = true;
+    btn.textContent = '✓ Saved';
+  });
+
   const trips = loadSavedTrips();
 
+  // Check if this exact trip was already saved in the last 5 seconds
+  const now = Date.now();
+  const recentDuplicate = trips.find(t =>
+    t.from === from &&
+    t.to === to &&
+    t.days === days &&
+    (now - parseInt(t.id)) < 5000
+  );
+
+  if (recentDuplicate) {
+    showToast('Already saved!');
+    return;
+  }
+
   const newTrip = {
-    id:       Date.now().toString(),        // unique ID = timestamp
+    id:       now.toString(),
     from:     from,
     to:       to,
     days:     days,
@@ -1088,20 +1108,15 @@ function saveCurrentTrip(plan, from, to, days, currency) {
     savedAt:  new Date().toLocaleDateString('en-IN', {
                 day: 'numeric', month: 'short', year: 'numeric'
               }),
-    plan:     plan                          // full plan object
+    plan:     plan
   };
 
-  // Add to front of array (newest first)
   trips.unshift(newTrip);
-
-  // Keep only the last 10 trips
   if (trips.length > 10) trips.pop();
-
   writeSavedTrips(trips);
   renderSavedTrips();
   showToast('Trip saved!');
 }
-
 // Delete one saved trip by ID
 function deleteSavedTrip(id, event) {
   // Stop the click from also triggering the load
@@ -1720,6 +1735,12 @@ async function migrateLocalTripsToCloud() {
 ------------------------------------------------ */
 const _originalSave = saveCurrentTrip;
 saveCurrentTrip = async function(plan, from, to, days, currency) {
+  // Disable all save buttons immediately
+  document.querySelectorAll('.action-btn.primary').forEach(btn => {
+    btn.disabled = true;
+    btn.textContent = '✓ Saved';
+  });
+
   if (currentUser) {
     const ok = await saveTripToCloud(plan, from, to, days, currency);
     if (ok) {
@@ -1730,7 +1751,6 @@ saveCurrentTrip = async function(plan, from, to, days, currency) {
       _originalSave(plan, from, to, days, currency);
     }
   } else {
-    // Not logged in — save locally as before
     _originalSave(plan, from, to, days, currency);
     showToast('Trip saved locally. Sign in to sync across devices.');
   }
