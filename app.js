@@ -1546,11 +1546,11 @@ async function injectWeather(lat, lng, destination, tripDays) {
 
 
 /* ================================================
-   PHASE 9 — SUPABASE AUTH + CLOUD SAVE
+   PHASE 9 — sbClient AUTH + CLOUD SAVE
 ================================================ */
 
-// Init Supabase client using config values
-const supabase = window.supabase.createClient(
+// Init sbClient client using config values
+const sbClient = window.supabase.createClient(
   CONFIG.SUPABASE_URL,
   CONFIG.SUPABASE_KEY
 );
@@ -1562,7 +1562,7 @@ let currentUser = null;
    AUTH: GOOGLE SIGN IN
 ------------------------------------------------ */
 async function signInGoogle() {
-  const { error } = await supabase.auth.signInWithOAuth({
+  const { error } = await sbClient.auth.signInWithOAuth({
     provider: 'google',
     options: {
       redirectTo: window.location.href
@@ -1575,7 +1575,7 @@ async function signInGoogle() {
    AUTH: SIGN OUT
 ------------------------------------------------ */
 async function signOut() {
-  await supabase.auth.signOut();
+  await sbClient.auth.signOut();
   currentUser = null;
   updateAuthUI(null);
   showToast('Signed out');
@@ -1603,10 +1603,10 @@ function updateAuthUI(user) {
 
 /* ------------------------------------------------
    AUTH: LISTEN FOR LOGIN/LOGOUT EVENTS
-   Supabase fires this whenever auth state changes
+   sbClient fires this whenever auth state changes
    including when user returns from Google redirect
 ------------------------------------------------ */
-supabase.auth.onAuthStateChange(async (event, session) => {
+sbClient.auth.onAuthStateChange(async (event, session) => {
   currentUser = session ? session.user : null;
   updateAuthUI(currentUser);
 
@@ -1625,12 +1625,12 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 });
 
 /* ------------------------------------------------
-   CLOUD SAVE: SAVE TRIP TO SUPABASE
+   CLOUD SAVE: SAVE TRIP TO sbClient
 ------------------------------------------------ */
 async function saveTripToCloud(plan, from, to, days, currency) {
   if (!currentUser) return false;
 
-  const { error } = await supabase.from('trips').insert({
+  const { error } = await sbClient.from('trips').insert({
     user_id:   currentUser.id,
     from_city: from,
     to_city:   to,
@@ -1648,12 +1648,12 @@ async function saveTripToCloud(plan, from, to, days, currency) {
 }
 
 /* ------------------------------------------------
-   CLOUD LOAD: GET TRIPS FROM SUPABASE
+   CLOUD LOAD: GET TRIPS FROM sbClient
 ------------------------------------------------ */
 async function loadCloudTrips() {
   if (!currentUser) return [];
 
-  const { data, error } = await supabase
+  const { data, error } = await sbClient
     .from('trips')
     .select('*')
     .order('saved_at', { ascending: false })
@@ -1667,13 +1667,13 @@ async function loadCloudTrips() {
 }
 
 /* ------------------------------------------------
-   CLOUD DELETE: REMOVE ONE TRIP FROM SUPABASE
+   CLOUD DELETE: REMOVE ONE TRIP FROM sbClient
 ------------------------------------------------ */
 async function deleteCloudTrip(id, event) {
   event.stopPropagation();
 
   if (currentUser) {
-    await supabase.from('trips').delete().eq('id', id);
+    await sbClient.from('trips').delete().eq('id', id);
   } else {
     // Local delete
     let trips = loadSavedTrips();
@@ -1686,7 +1686,7 @@ async function deleteCloudTrip(id, event) {
 /* ------------------------------------------------
    MIGRATE: MOVE LOCAL TRIPS TO CLOUD ON LOGIN
    When user signs in for the first time,
-   push their localStorage trips to Supabase
+   push their localStorage trips to sbClient
    then clear localStorage.
 ------------------------------------------------ */
 async function migrateLocalTripsToCloud() {
@@ -1694,7 +1694,7 @@ async function migrateLocalTripsToCloud() {
   if (!local.length) return;
 
   for (const trip of local) {
-    await supabase.from('trips').insert({
+    await sbClient.from('trips').insert({
       user_id:    currentUser.id,
       from_city:  trip.from,
       to_city:    trip.to,
@@ -1828,7 +1828,7 @@ async function loadTripById(id, isCloud) {
   let plan, from, to, days, currency;
 
   if (isCloud) {
-    const { data } = await supabase
+    const { data } = await sbClient
       .from('trips')
       .select('*')
       .eq('id', id)
@@ -1872,7 +1872,7 @@ clearAllTrips = async function() {
   if (!confirm('Delete all saved trips?')) return;
 
   if (currentUser) {
-    await supabase
+    await sbClient
       .from('trips')
       .delete()
       .eq('user_id', currentUser.id);
