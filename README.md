@@ -41,4 +41,6 @@ LLM + agent + tools + coordinator + memory
 
 also have option to choose cheap and best one. 
 database for local save - supabase
+google console for sign up 
+netlify - deployment 
     
