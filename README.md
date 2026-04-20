@@ -39,5 +39,6 @@ LLM + agent + tools + coordinator + memory
                                                   ↓
                                   show weather card above the itinerary                             )
 
-example 
+also have option to choose cheap and best one. 
+database for local save - supabase
     
