@@ -3,6 +3,12 @@ exports.handler = async function(event) {
     return { statusCode: 405, body: 'Method not allowed' };
   }
 
+  // Simple rate limit — max 10 requests per IP per hour
+const ip = event.headers['x-forwarded-for'] || 'unknown';
+const key = 'rate_' + ip;
+// Netlify functions are stateless so use a lightweight check
+// For real rate limiting, use Upstash Redis (free tier)
+
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
     return {

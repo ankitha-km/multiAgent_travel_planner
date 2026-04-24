@@ -12,3 +12,20 @@ desktop.ini
 
 trip.html
 trip_deploy.html
+
+# API keys — never push
+config.js
+
+# Android build files — too large for GitHub
+android/
+www/
+
+# Node modules — too large, auto-generated
+node_modules/
+
+# Windows junk
+Thumbs.db
+desktop.ini
+
+# Mac junk
+.DS_Store
