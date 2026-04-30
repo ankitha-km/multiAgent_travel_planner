@@ -28,7 +28,7 @@ LLM + agent + tools + coordinator + memory
   pyhton
   LangChain/CrewAI
   Hugging Face
-  APIs(google maps , etc..)
+  APIs(google maps , etc..) used grok free api 
   live weather with open-meteo(  ai return map_markers with lat/lng
                                                   ↓
                                   we take the first marker.s coordinates
